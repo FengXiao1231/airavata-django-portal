@@ -153,6 +153,16 @@ export default {
     setPlainText() {
       const metadata = this.cloneMetadata();
       metadata["file-metadata"] = { "mime-type": "text/plain" };
+      if (Array.isArray(metadata["output-view-providers"])) {
+        const outputViewProviders = metadata["output-view-providers"].filter(
+          (providerId) => providerId !== "html-file"
+        );
+        if (outputViewProviders.length > 0) {
+          metadata["output-view-providers"] = outputViewProviders;
+        } else {
+          delete metadata["output-view-providers"];
+        }
+      }
       this.data.metaData = metadata;
     },
     setHtml() {

@@ -57,4 +57,41 @@ describe("ApplicationOutputFieldEditor", () => {
       "html-file",
     ]);
   });
+
+  test("setPlainText removes html-file provider and preserves other providers", () => {
+    const wrapper = factory({
+      custom: {
+        keep: true,
+      },
+      "file-metadata": {
+        "mime-type": "text/html",
+      },
+      "output-view-providers": ["existing-provider", "html-file"],
+    });
+
+    wrapper.vm.setPlainText();
+
+    expect(wrapper.vm.data.metaData).toEqual({
+      custom: {
+        keep: true,
+      },
+      "file-metadata": {
+        "mime-type": "text/plain",
+      },
+      "output-view-providers": ["existing-provider"],
+    });
+  });
+
+  test("setPlainText removes output-view-providers when html-file is the only provider", () => {
+    const wrapper = factory({});
+
+    wrapper.vm.setHtml();
+    wrapper.vm.setPlainText();
+
+    expect(wrapper.vm.data.metaData).toEqual({
+      "file-metadata": {
+        "mime-type": "text/plain",
+      },
+    });
+  });
 });
