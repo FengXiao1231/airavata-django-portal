@@ -2,6 +2,7 @@
 import logging
 
 import thrift
+import thrift.transport.TTransport
 from django.shortcuts import render
 
 from . import utils
@@ -9,21 +10,19 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 
-# TODO: use the pooled clients in the airavata-python-sdk directly instead of
-# these request attributes
 class AiravataClientMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        request.airavata_client = utils.airavata_api_client_pool
-        response = self.get_response(request)
+        with utils.airavata_api_client_pool.connection() as airavata_client:
+            request.airavata_client = airavata_client
+            response = self.get_response(request)
 
         return response
 
     def process_exception(self, request, exception):
-        if isinstance(exception,
-                      thrift.transport.TTransport.TTransportException):
+        if isinstance(exception, thrift.transport.TTransport.TTransportException):
             return render(
                 request,
                 'django_airavata/error_page.html',
