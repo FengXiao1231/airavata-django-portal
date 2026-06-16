@@ -10,6 +10,41 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 
+class HtmlOutputFrameOptionsMiddleware:
+    """Apply browser protections for HTML output downloads."""
+
+    CSP_HEADER = "Content-Security-Policy"
+    HTML_OUTPUT_DOWNLOAD_PATHS = {
+        "/sdk/download/",
+        "/sdk/download-file/",
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        mime_type = request.GET.get("mime-type", "").split(";", 1)[0].strip().lower()
+        if (request.path in self.HTML_OUTPUT_DOWNLOAD_PATHS and
+                mime_type == "text/html"):
+            response["X-Frame-Options"] = "SAMEORIGIN"
+            response[self.CSP_HEADER] = self._with_strict_sandbox_csp(
+                response.get(self.CSP_HEADER, ""))
+        return response
+
+    def _with_strict_sandbox_csp(self, csp):
+        directives = []
+        for directive in csp.split(";"):
+            directive = directive.strip()
+            if not directive:
+                continue
+            directive_name = directive.split(None, 1)[0].lower()
+            if directive_name != "sandbox":
+                directives.append(directive)
+        directives.append("sandbox")
+        return "; ".join(directives)
+
+
 class AiravataClientMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
